@@ -305,7 +305,7 @@
       }
     });
 
-    // --- 報到處理邏輯 (修改為跨域 JSONP 請求) ---  
+    // --- 報到處理邏輯 (升級為高穩定 Fetch API) ---  
     function processCheckIn(code) {
       isProcessing = true;
       if (html5QrcodeScanner) html5QrcodeScanner.pause(true); // 暫停相機
@@ -320,25 +320,20 @@
           finalUid = code.split("uid=")[1].split("&")[0];
       }
 
-      // 動態產生 script tag 以突破跨域限制 (JSONP 技術)
-      let script = document.createElement('script');
-      // 將請求發送到 GAS
-      script.src = GAS_WEB_APP_URL + "?callback=window.handleResultJSONP&uid=" + encodeURIComponent(finalUid);
-      script.id = "jsonp-request";
-      document.body.appendChild(script);
+      // 現代化安全連線寫法 (突破舊版瀏覽器阻擋 JSONP 的問題)
+      let requestUrl = GAS_WEB_APP_URL + "?callback=dummyCallback&uid=" + encodeURIComponent(finalUid);
 
-      // 設定 8 秒超時
-      window.jsonpTimeout = setTimeout(() => {
-          handleSystemError({message: "連線超時！請檢查兩點：\n1. 手機網路是否正常。\n2. 您剛才更新 Code.gs 後，是否有點擊「管理部署作業 > 編輯 > 建立『新版本』」來發佈更新？（若沒有重新發佈新版本，會發生此錯誤）"});
-      }, 8000);
-    }
-
-    // JSONP 連線成功時會回來呼叫這個函數
-    window.handleResultJSONP = function(response) {
-      clearTimeout(window.jsonpTimeout);
-      let script = document.getElementById('jsonp-request');
-      if (script) script.remove(); // 清理資源
-      handleResult(response);
+      fetch(requestUrl, { method: "GET", mode: "cors" })
+        .then(response => response.text())
+        .then(text => {
+            // Google 會回傳 "dummyCallback({\"success\":...})" 格式的字串，我們只需要裡面的 JSON
+            let jsonString = text.replace("dummyCallback(", "").replace(/\)$/, "");
+            let data = JSON.parse(jsonString);
+            handleResult(data);
+        })
+        .catch(error => {
+            handleSystemError({message: "網路環境異常，或是被瀏覽器攔截連線！請檢查您的網路訊號。"});
+        });
     }
 
     function handleResult(response) {
