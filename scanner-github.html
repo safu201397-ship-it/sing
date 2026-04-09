@@ -308,7 +308,9 @@
     // --- 報到處理邏輯 (升級為高穩定 Fetch API) ---  
     function processCheckIn(code) {
       isProcessing = true;
-      if (html5QrcodeScanner) html5QrcodeScanner.pause(true); // 暫停相機
+      try {
+        if (html5QrcodeScanner) html5QrcodeScanner.pause(true); // 暫停相機
+      } catch(e) { console.log('相機未啟動，略過暫停'); }
       
       document.getElementById('overlayLoading').classList.add('active');
       document.getElementById('overlaySuccess').classList.remove('active');
@@ -365,7 +367,9 @@
       document.getElementById('overlayError').classList.remove('active');
       setTimeout(() => {
         isProcessing = false;
-        if (html5QrcodeScanner) html5QrcodeScanner.resume(); // 喚醒相機
+        try {
+          if (html5QrcodeScanner) html5QrcodeScanner.resume(); // 喚醒相機
+        } catch(e) { }
       }, 300);
     }
     
