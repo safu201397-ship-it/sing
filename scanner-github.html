@@ -182,7 +182,7 @@
   <script>
     // ==========================================
     // ⚠️ 請在下方雙引號中，貼上您 Google Apps Script 的「部署網址」!
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdDuONyWLVsz6hW-Gfxi_WNpvhZj8VKZ-werd15OcxG1G7nVQYeR_GBLpJxEKFGuU/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwH6wZfxPD3CSvI1TSD5xr2XGDI9jRbG-qN2QBv4GINk2ufxzWQvWedQRtFZJ_wMQ/exec";
     // ==========================================
 
     const CORRECT_PIN = "8888"; // 工作人員密碼
@@ -223,10 +223,14 @@
 
     // --- 相機初始化 ---
     function initScanner() {
+      // 解決前置鏡頭問題：強制使用後置相機 (環境相機)
       html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
         fps: 10, 
         qrbox: {width: 250, height: 250},
         aspectRatio: 1.0,
+        videoConstraints: {
+          facingMode: "environment" // 強制後畫面
+        }
       }, false);
       html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
@@ -310,15 +314,22 @@
       document.getElementById('overlaySuccess').classList.remove('active');
       document.getElementById('overlayError').classList.remove('active');
       
+      // 容錯機制：如果掃到舊版的 QR Code (是一長串網址)，自動提取最後的 UID
+      let finalUid = code;
+      if (code.includes("uid=")) {
+          finalUid = code.split("uid=")[1].split("&")[0];
+      }
+
       // 動態產生 script tag 以突破跨域限制 (JSONP 技術)
       let script = document.createElement('script');
-      script.src = GAS_WEB_APP_URL + "?callback=window.handleResultJSONP&uid=" + encodeURIComponent(code);
+      // 將請求發送到 GAS
+      script.src = GAS_WEB_APP_URL + "?callback=window.handleResultJSONP&uid=" + encodeURIComponent(finalUid);
       script.id = "jsonp-request";
       document.body.appendChild(script);
 
       // 設定 8 秒超時
       window.jsonpTimeout = setTimeout(() => {
-          handleSystemError({message: "請求連線超時，請檢查手機網路狀態！"});
+          handleSystemError({message: "連線超時！請檢查兩點：\n1. 手機網路是否正常。\n2. 您剛才更新 Code.gs 後，是否有點擊「管理部署作業 > 編輯 > 建立『新版本』」來發佈更新？（若沒有重新發佈新版本，會發生此錯誤）"});
       }, 8000);
     }
 
