@@ -181,7 +181,7 @@
   <script>
     // ==========================================
     // ⚠️ 請在下方雙引號中，貼上您 Google Apps Script 的「部署網址」!
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzO9LHththIBe-o9CoaRiCsRrUw3XjmVBO5dS7JGcpn19Rpx632N6peOI_DugKpqpg/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxxXcOwE4FjpW02UucOoe1HQ_qgtQ_u2DG0wflzzNd2Tvpe8V0GmTVJXgHlXqsGoLE/exec";
     // ==========================================
     
     // 輪詢間隔 (5000 毫秒 = 5 秒)
@@ -196,7 +196,8 @@
           return;
       }
 
-      let requestUrl = GAS_WEB_APP_URL + "?action=getLatest";
+      // 加上時間戳記防止瀏覽器快取 (非常重要，否則數字不會動)
+      let requestUrl = GAS_WEB_APP_URL + "?action=getLatest&t=" + new Date().getTime();
 
       fetch(requestUrl, { method: "GET", mode: "cors" })
         .then(response => response.json())
